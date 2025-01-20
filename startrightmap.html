@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+       
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Map Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+        #map {
+            height: 500px;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+        }
+        .controls {
+            margin-bottom: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+  
+<div style="display: flex">
+    <div id="left" style="width:49%; clear:left">
+          <h1>Map Manager</h1>
+        <div class="controls">
+        <label for="eventpicker">Choose Event:</label>
+        <select id="eventpicker" onchange="handleEventSelection(this.value)"></select>
+        <input type="text" id="newEventName" placeholder="New Event Name">
+        <button onclick="addNewEvent()">Add Event</button>
+    </div>
+
+    <div class="controls">
+        <label for="racepicker">Choose Race:</label>
+        <select id="racepicker" onchange="handleRaceSelection(this.value)"></select>
+        <input type="text" id="newRaceName" placeholder="New Race Name">
+        <button onclick="addNewRace()">Add Race</button>
+    </div>
+
+    <div class="controls">
+        <label for="colorPicker">Select Color:</label>
+        <select id="colorPicker">
+            <option value="red">Red</option>
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
+            <option value="yellow">Yellow</option>
+            <option value="orange">Orange</option>
+            <option value="purple">Purple</option>
+            <option value="pink">Pink</option>
+            <option value="black">Black</option>
+        </select>
+        <button onclick="colorscheme = !colorscheme; drawEventOnMap(selectedEvent)">color-scheme</button>
+    </div>
+
+    <div class="controls">
+        <input type="file" id="kmlFile" accept=".kml">
+        <button onclick="resetFileInput()">Reset File</button><br>
+        <hr>
+        <button onclick="addpointstoroute()">add points to route</button>
+    <br>
+        <button onclick="addapoint = !addapoint; console.log(addapoint)">add/remove points manually</button>
+        <hr>
+        <button onclick="saveToFirebase();console.log(eventData)">save changes to route</button>
+    </div></div>  
+     <div style = "width:50%; font-size: small; overflow-y: scroll;height:200px" id="logdiv"> </div>
+</div>
+
+<div style="display: flex">  
+     <div id="output" style="width:49%; clear:left"></div>
+     <div style="width:49%;">
+        <p id="overunderp"></p>
+     </div>
+</div>   
+<h1>Runners Manager</h1>
+<input type="file" id="csvFileInput" accept=".csv" />
+<div style="display: flex;">
+<div id="map" style="width: 50%;"></div>
+<div id="graph" style="width: 50%;"></div>
+</div>
+
+ 
+    
+</body>
+
+<script>
+        colorscheme =false
+        addapoint =false
+gibtsschonlayercontrol = false
+        function logit(it){
+            logdiv.append('p').text(new Date().toLocaleTimeString() + " - " + it)
+        }
+        logdiv = d3.select("#logdiv")
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "startrightmap.firebaseapp.com",
+            databaseURL: "https://startrightmap-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "startrightmap",
+            storageBucket: "startrightmap.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+a = false
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let eventData = {};
+        window.onload = initialize;
+        document.getElementById('colorPicker').addEventListener('change', () => {
+        selectedEvent = document.getElementById('eventpicker').value;
+         selectedRace = document.getElementById('racepicker').value;
+
+        if (selectedEvent && selectedRace) {
+            const newColor = getSelectedColor();
+            eventData[selectedEvent][selectedRace].style.color = newColor;
+
+            saveToFirebase();
+            drawEventOnMap(selectedEvent);
+        }
+    });
+    
+    function initialize() {
+    loadEventsFromFirebase();
+    document.getElementById('kmlFile').addEventListener('change', handleFileLoad);
+    }
+    function loadEventsFromFirebase() {
+    database.ref('events').once('value').then(snapshot => {
+    eventData = snapshot.val() || {};
+    original = JSON.parse(JSON.stringify(eventData))
+    populateDropdown('eventpicker', Object.keys(eventData));
+    populateDropdown('racepicker', Object.keys(eventData[0] || {}));   
+    logit("firebase loaded. included events: " + Object.keys(eventData))
+    ev0=Object.keys(eventData)[0]
+    handleEventSelection(ev0)
+    handleRaceSelection(Object.keys(eventData[ev0])[0])
+    })};
+    function saveToFirebase() {
+
+    database.ref('events').set(eventData);
+    }
+    function handleEventSelection(eventName) {
+    populateDropdown('racepicker', Object.keys(eventData[eventName] || {}));
+    drawEventOnMap(eventName);
+    logit("event selected " + eventName + " - races : " +Object.keys(eventData[eventName]))
+    }
+    function handleRaceSelection(raceName) {
+    selectedRace = raceName
+    selectedEvent = document.getElementById('eventpicker').value;
+    if (!selectedEvent || !raceName) return;
+    logit("race selected: "+raceName )
+    const race = eventData[selectedEvent][raceName];
+    if (race) {
+    // Update the color picker to match the race color
+    document.getElementById('colorPicker').value = race.style.color;
+
+    // Display race info
+    if (race.coords){ race.length = calculatePolylineLength(race.coords);}else{
+
+    }
+    const dateSaved = race.dateSaved || 'Not saved';
+
+
+
+    // Redraw the map
+    drawEventOnMap(selectedEvent);
+    }
+    update_info(raceName)
+    }
+    function drawEventOnMap(eventName) {
+    console.log(a)
+    if(a== true)  {xc.remove()}else{a =true}
+    map.eachLayer(layer => {
+    // Check if the layer is not a tile layer or a LayerControl
+    if (!(layer instanceof L.TileLayer) ) {
+    map.removeLayer(layer);
+    }
+    });
+    console.log("hier wird gelöscht")
+
+    const layers = {};
+    layerNames=[]
+
+    Object.keys(eventData[eventName]).forEach(key => {
+    layerNames.push(key) 
+    });
+
+    layerNames.forEach(name => {
+    layerGroup = L.layerGroup();
+    layers[name] = layerGroup.addTo(map);
+
+    });
+
+
+    //layers.forEach(element => {element.addTo(map)})
+
+    // Add all LayerGroups to the map's layer control
+    console.log("test")
+    xc = L.control.layers(null, layers).addTo(map)
+
+
+
+
+
+
+    const event = eventData[eventName];
+
+
+    for (const raceName in event) {
+
+    console.log("hier wird "+raceName +" gemalt")
+    race = event[raceName];
+
+    // TODO: getbounds hat nicht funktinoiert 
+    map.setView(race.coords[Math.round(race.coords.length/3)],12)
+    if (race.coords && race.coords.length > 1) {
+    let urace = raceName
+    const polyline = L.polyline(race.coords, { color: race.style.color })
+        .on('click', (event) => {if(addapoint == true){addapointfun(event.latlng)}else{handleRaceSelection(urace)}}) // Select race on click
+        .addTo(layers[raceName]);
+
+
+
+        for (index =0;index<race.coords.length-1;index++){
+            dis = haversineDistance(race.coords[index][0],race.coords[index][1],race.coords[index+1][0],race.coords[index+1][1])
+            dis = Math.round(dis*1000)/1000
+            
+            if(dis > 0.025){col="red"}
+            if(dis < 0.025){col="yellow"}
+            if(dis == 0.025){col="lime"}
+            
+            if(colorscheme){col=race.style.color
+            }
+            let cir = L.circle(race.coords[index],{ color:  col,draggable: true}).addTo(layers[raceName])
+            let remindex = index
+            cir.bindTooltip(remindex +" - " + Math.round(dis*1000) + ' m')
+            
+            cir.on("click",function(){map.removeLayer(cir);race.coords.splice(remindex,1)})
+            cir.on('mousedown', (e) => {
+    const draggable = new L.Draggable(cir._path);
+    draggable.enable();
+
+    // Listen for dragging events
+    draggable.on('drag', (event) => {
+    const latLng = map.layerPointToLatLng(event.target._newPos);
+    cir.setLatLng(latLng); // Update circle's position
+    });
+
+    // On drag end, update coordinates array and disable dragging
+    draggable.on('dragend', (event) => {
+    const latLng = cir.getLatLng();
+    race.coords[index] = [latLng.lat, latLng.lng]; // Update array
+    draggable.disable();
+    console.log('Updated Coordinates:', coordinates);
+    });
+    });
+        
+        
+        }
+
+
+
+    }
+    }
+
+
+    // hier ist nur fallse 
+    //update_info()
+
+    }
+    function update_info(selectedRace){
+    selectedEvent = document.getElementById('eventpicker').value;
+
+        race=      eventData[selectedEvent][selectedRace]
+
+        under=0
+        right=0
+        over=0
+        points = race.coords
+        for (index =0;index<points.length-1;index++){
+            let dis = haversineDistance(points[index][0],points[index][1],points[index+1][0],points[index+1][1])
+            if(dis > 0.028){over++}
+            if(dis <= 0.028 && dis >= 0.022){right++}
+            if(dis < 0.022){under++}
+
+        }
+
+        logit(selectedRace + " analysis "+ under +" / " + right +" / " + over)
+
+    document.getElementById('output').innerHTML = `
+    <p><strong>Race Info: `+ selectedRace + `</strong></p>
+    <p>Number of Points: ${race.coords.length}</p>
+    <p>Color: ${race.style.color}</p>
+    <p>Length: ${race.length.toFixed(2)} km</p>
+    <p>Date Saved: ${race.timestamp}</p>
+    `;
+
+
+
+
+
+    }
+    function calculatePolylineLength(coords) {
+    let length = 0;
+    for (let i = 1; i < coords.length; i++) {
+    const [lat1, lon1] = coords[i - 1];
+    const [lat2, lon2] = coords[i];
+    length += haversineDistance(lat1, lon1, lat2, lon2);
+    }
+    return length;
+    }
+    function addNewEvent() {
+    const newEvent = document.getElementById('newEventName').value.trim();
+    if (newEvent && !eventData[newEvent]) {
+    eventData[newEvent] = {};
+    saveToFirebase();
+    populateDropdown('eventpicker', Object.keys(eventData));
+    logit("Event created, not saved: " + newEvent )
+    }
+    }
+    function addNewRace() {
+    selectedEvent = document.getElementById('eventpicker').value;
+    const newRace = document.getElementById('newRaceName').value.trim();
+    if (selectedEvent && newRace && !eventData[selectedEvent][newRace]) {
+    eventData[selectedEvent][newRace] = { coords: [], style: { color: getSelectedColor() },length:999,timestamp:new Date() };
+    saveToFirebase();
+    logit("race saved to firebase " + newRace)
+    populateDropdown('racepicker', Object.keys(eventData[selectedEvent]));
+    }
+    }
+    function populateDropdown(dropdownId, options) {
+    const dropdown = document.getElementById(dropdownId);
+    dropdown.innerHTML = '';
+    options.forEach(option => {
+    const opt = document.createElement('option');
+    opt.value = option;
+    opt.textContent = option;
+    dropdown.appendChild(opt);
+    });
+    }
+    function handleFileLoad(event) {
+    const file = event.target.files[0];
+    if (file) {
+    const reader = new FileReader();
+    reader.onload = e => processKML(e.target.result);
+    reader.readAsText(file);
+    }
+    }
+    function processKML(kmlText) {
+    const parser = new DOMParser();
+    const kmlDoc = parser.parseFromString(kmlText, "application/xml");
+
+    const coordinatesElements = kmlDoc.getElementsByTagName("coordinates");
+    points = [];
+
+    for (const element of coordinatesElements) {
+    const coordsText = element.textContent.trim();
+    const coordsArray = coordsText.split(/\s+/).map(coord => {
+        const [lon, lat] = coord.split(',').map(Number);
+        return [lat, lon];
+    });
+
+    points.push(...coordsArray);
+    }
+    //points.pop()
+    //points.pop()
+    // diese funktin löscht jeden zweiten eintrag
+    // points = points.filter((_, index) => index % 2 === 0);
+    // 
+
+    for (index =0;index<points.length-1;index++){
+            dis = haversineDistance(points[index][0],points[index][1],points[index+1][0],points[index+1][1])
+            if(dis < 0.01){points.splice(index, 1);
+            // points[index].push(dis)    
+            }
+        }
+        console.log(points)
+
+
+
+
+
+    selectedEvent = document.getElementById('eventpicker').value;
+    selectedRace = document.getElementById('racepicker').value.trim();
+
+
+    eventData[selectedEvent][selectedRace] = {
+        coords: points,
+        style: { color: getSelectedColor() },
+        timestamp : new Date().toLocaleDateString(),
+        length: calculatePolylineLength(points)
+    }
+    
+
+    logit("coordiantes for " + selectedRace + " updated and saved") 
+   
+    update_info(selectedRace)
+    saveToFirebase();
+    drawEventOnMap(selectedEvent);
+
+    }
+    function getSelectedColor() {
+    return document.getElementById('colorPicker').value;
+    }
+    function resetFileInput() {
+    document.getElementById('kmlFile').value = '';
+    }
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+    const toRadians = degrees => degrees * Math.PI / 180;
+    const R = 6371; // Mean radius of the Earth in kilometers (use 6371 for average)
+
+    // Convert latitude and longitude to radians
+    const φ1 = toRadians(lat1);
+    const φ2 = toRadians(lat2);
+    const Δφ = toRadians(lat2 - lat1);
+    const Δλ = toRadians(lon2 - lon1);
+
+    // Haversine formula
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in kilometers
+    }
+    function addpointstoroute() {
+    let tempcoords = eventData[selectedEvent][selectedRace].coords
+    total =0
+    newpoints =[[tempcoords[0][0],tempcoords[0][1],0,0]]
+    for (index=0;index<tempcoords.length-1;index++){
+    dis = haversineDistance(race.coords[index][0],race.coords[index][1],race.coords[index+1][0],race.coords[index+1][1])
+    total += dis
+    newpoints.push([tempcoords[index+1][0],tempcoords[index+1][1],Math.round(dis*1000),Math.round(total*1000)])
+    }
+
+    adjusted_ds =[tempcoords[0]]
+    for(i=0;i<race["length"]*1000;i+=25){
+
+    for (index=0;index<tempcoords.length-1;index++){
+
+    if(newpoints[index][3]==i){adjusted_ds.push(tempcoords[index]); console.log("nice "+0)}
+    if(newpoints[index][3]<i && newpoints[index+1][3]>i){
+
+    //   newCoord = getIntermediatePoint(tempcoords[index], tempcoords[index+1], 25);
+
+    delta = newpoints[index+1][3]-newpoints[index][3]
+    //rest der gelaufenenentfernung ab dem unteren coord
+    rest =  i - newpoints[index][3]
+
+    ratio = rest/delta
+    newCoord =[
+    tempcoords[index][0]+   (tempcoords[index+1][0]-tempcoords[index][0])*ratio,
+    tempcoords[index][1]+   (tempcoords[index+1][1]-tempcoords[index][1])*ratio
+    ]
+
+
+
+
+
+    adjusted_ds.push(newCoord)
+    //console.log(newpoints[index][3] + " - " + i+ "- "+newpoints[index+1][3])
+    //distance zwischen den beiden existierenden coordinaten
+
+
+
+
+
+
+    }
+    }
+    }
+    adjusted_ds.push(tempcoords[tempcoords.length-1])
+    eventData[selectedEvent][selectedRace].coords = adjusted_ds
+    update_info(selectedRace)
+    drawEventOnMap(selectedEvent)
+    }
+    function addpointstoroute2(auflosung) {
+
+    race = eventData[selectedEvent][selectedRace]
+    const EARTH_RADIUS = 6371000; // Earth radius in meters
+    const maxDistance = 25; // Maximum allowed distance in meters
+
+
+    for (index =0;index<race.coords.length-1;index++){
+            dis = haversineDistance(race.coords[index][0],race.coords[index][1],race.coords[index+1][0],race.coords[index+1][1])
+            
+        //     console.log(dis)
+            if(dis < auflosung){}
+            else{
+            newpoint = [(race.coords[index][0]+race.coords[index+1][0] )/2,
+                            (race.coords[index][1]+race.coords[index+1][1] )/2]
+                        race.coords.splice(index+1, 0, newpoint);
+                            index --
+                        }
+            
+            
+            // cir = L.circle(race.coords[index],{ color:  col}).addTo(layers[raceName])
+            // cir.on('drag', e => coordinates[index] = [e.latlng.lat, e.latlng.lng]);
+        }
+
+    update_info(selectedRace)
+    drawEventOnMap(selectedEvent)
+    }
+    function addapointfun(wo){
+    console.log(wo)
+    }
+    function getIntermediatePoint(coord1, coord2, distanceFromFirst) {
+    const [lat1, lon1] = coord1;
+    const [lat2, lon2] = coord2;
+
+    // Convert degrees to radians
+    const toRadians = (deg) => (deg * Math.PI) / 180;
+    const toDegrees = (rad) => (rad * 180) / Math.PI;
+
+    const R = 6371000; // Earth's radius in meters
+
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const totalDistance = R * c; // Total distance between the two points in meters
+
+    // Fraction of the way
+    const fraction = distanceFromFirst / totalDistance;
+
+    // Interpolated latitude and longitude
+    const newLat = lat1 + fraction * (lat2 - lat1);
+    const newLon = lon1 + fraction * (lon2 - lon1);
+
+    return [newLat, newLon];
+}
+document.getElementById('csvFileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                     text = e.target.result; 
+                     text=  text.trim().split('\n')
+                     for(i=0;i<text.length;i++){
+                        text[i] = text[i].slice(0, -1);
+                        text[i] = text[i].trim().split(';')
+                       }
+
+  laufer_ds = {}
+                    for(i=0;i<text[0].length;i++){
+                  
+                    laufer_ds[text[0][i]] =[]}
+                    
+                    for(i=1;i<text.length;i++){
+                        for(p=0;p<text[0].length;p++){
+                          if(text[i][p] != "" && text[i][p] != undefined ){ 
+                            timeinsek  = text[i][p].split(":") 
+                            timeinsek = parseInt(timeinsek[0])*3600+parseInt(timeinsek[1])*60+parseInt(timeinsek[2])
+                            laufer_ds[text[0][p]].push(timeinsek)}
+                        }
+                    }
+
+                    // das hier ist temporär wiel ich keine zeit mehr hatte es ordentlich zzu machen
+                    runners={mara:[],half:[]}
+                    for(i=0;i<laufer_ds["mara-brutto"].length;i++){
+                        delay = laufer_ds["mara-brutto"][i]-laufer_ds["mara-netto"][i]
+                        speed = 42195/laufer_ds["mara-netto"][i]
+                        runners.mara.push([delay,speed])
+                    }
+                    for(i=0;i<laufer_ds["half-brutto"].length;i++){
+                        delay = laufer_ds["half-brutto"][i]-laufer_ds["half-netto"][i]
+                        speed = 21095/laufer_ds["half-netto"][i]
+                        runners.half.push([delay,speed])
+                    }
+
+                    console.log(laufer_ds)
+                    console.log(runners)
+                   
+                };
+                reader.readAsText(file);
+            }
+        });
+    
+
+</script>
+</html>
+
