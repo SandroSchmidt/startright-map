@@ -83,7 +83,7 @@ realtime = false
 
 
                     <td>time: </td>
-                    <td><span id="uhr">06:30</span></td>
+                    <td><span id="uhr">08:45</span></td>
                 <td></td>
                     <td>guntime:</td>
                     <td><span id="gunuhr">00:00</span></td>
@@ -255,18 +255,18 @@ racenames={mara:"marathon",maraslow:"marathon diverted",half:"halfmarathon",tenk
            cutoff = {mara:18*60+15,maraslow:8*60+360+60,half:5*60+360+120,tenkm:5*60+360+90,fivekm:3*60+330+360,twofivekm:3*60+360+360}
 
 
-           tim =60*6+30
+           tim =60*8+45
 key= "delay"
 const value = localStorage.getItem(key);
 
 // Check if the value exists
-delay={mara:(7*60-5),half:(7*60-5)}
+delay={mara:(9*60),half:(9*60)}
 if (value !== null) {
 
  delay = JSON.parse(value)
 
 } else {
-    delay={mara:(7*60-5),half:(7*60-5)}
+    delay={mara:(9*60),half:(9*60)}
     localStorage.setItem(key, JSON.stringify(delay));
 
 
@@ -387,11 +387,11 @@ initialise_map()
                           
                     //    temp = Math.round(Math.max(0,timr-delay.mara)*3.136)
          
-               // if (filast[0] != 0 && timr < delay.mara+122) {markers[8].setLngLat(coordinates.mara[filast[0]+1])}else{markers[8].setLngLat([0,0])}
-               //         if (filast[1] != 0  ) {markers[9].setLngLat(coordinates.mara[filast[1]-1])}else{markers[9].setLngLat([0,0])}
+               if (filast[0] != 0 && timr < delay.mara+126) {markers[8].setLngLat(coordinates.mara[filast[0]+1])}else{markers[8].setLngLat([0,0])}
+                        if (filast[1] != 0  ) {markers[9].setLngLat(coordinates.mara[filast[1]-1])}else{markers[9].setLngLat([0,0])}
                
-              //          if (halffilast[0] != 0 && timr < delay.half+122) {markers[10].setLngLat(coordinates.half[halffilast[0]+1])}else{markers[10].setLngLat([0,0])}
-              //          if (halffilast[1] != 0  ) {markers[11].setLngLat(coordinates.mara[halffilast[1]-1])}else{markers[11].setLngLat([0,0])}
+                       if (halffilast[0] != 0 && timr < delay.half+63) {markers[10].setLngLat(coordinates.half[halffilast[0]+1])}else{markers[10].setLngLat([0,0])}
+                        if (halffilast[1] != 0  ) {markers[11].setLngLat(coordinates.mara[halffilast[1]-1])}else{markers[11].setLngLat([0,0])}
                
     } 
  // button zum absoielen
