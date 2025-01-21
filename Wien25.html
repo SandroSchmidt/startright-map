@@ -258,7 +258,10 @@ racenames={mara:"marathon",maraslow:"marathon diverted",half:"halfmarathon",tenk
            tim =60*8+45
 key= "delay"
 const value = localStorage.getItem(key);
-
+for(i=0;i<coordinates.half.length;i++){
+    coordinates.half[i][0] += 0.00005
+    coordinates.half[i][1] += 0.00005
+}
 // Check if the value exists
 delay={mara:(9*60),half:(9*60)}
 if (value !== null) {
