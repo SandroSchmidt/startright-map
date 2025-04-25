@@ -100,20 +100,20 @@ if(columns.mara2[i] != undefined){
 }
         }
 
-        for(i=0;i<columns.half1.length;i++){
+     if(columns.half1){   for(i=0;i<columns.half1.length;i++){
 if(columns.half2[i] != undefined){
             start = timeToSeconds(columns.half2[i])-timeToSeconds(columns.half1[i])
             speed = (42195/2) / (timeToSeconds(columns.half1[i]))
             laufer.half.push([start,speed])
 }
-        }
-        for(i=0;i<columns.ten1.length;i++){
+        }}
+        if(columns.ten1){{ for(i=0;i<columns.ten1.length;i++){
 if(columns.ten2[i] != undefined){
             start = timeToSeconds(columns.ten2[i])-timeToSeconds(columns.ten1[i])
             speed = 10000/ (timeToSeconds(columns.ten1[i]))
             laufer.tenkm.push([start,speed])
 }
-        }
+        }}}
         /*
         for(i=0;i<columns.five1.length;i++){
 if(columns.five2[i] != undefined){

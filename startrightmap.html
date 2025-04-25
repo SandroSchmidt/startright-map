@@ -30,6 +30,11 @@
         .controls {
             margin-bottom: 10px;
         }
+        .marker-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -75,8 +80,10 @@
         <button onclick="addpointstoroute()">add points to route</button>
     <br>
         <button onclick="addapoint = !addapoint; console.log(addapoint)">add/remove points manually</button>
+        <button onclick=" eventData[selectedEvent][selectedRace].coords = eventData[selectedEvent][selectedRace].coords.map(([lng, lat]) => [lat, lng])
+                   drawEventOnMap(selectedEvent); logit('Die Koordinaten Lat/Lng wurden geflipped und neu gezeichnet, noch nicht gepseichert.')">flipp lat/lng</button>
         <hr>
-        <button onclick="saveToFirebase();console.log(eventData)">save changes to route</button>
+        <button onclick="saveToFirebase()">save changes to route</button>
     </div></div>  
      <div style = "width:50%; font-size: small; overflow-y: scroll;height:200px" id="logdiv"> </div>
 </div>
@@ -99,11 +106,12 @@
 </body>
 
 <script>
+    selectedPointIndex = null;
         colorscheme =false
         addapoint =false
 gibtsschonlayercontrol = false
         function logit(it){
-            logdiv.append('p').text(new Date().toLocaleTimeString() + " - " + it)
+            logdiv.insert('p').text(new Date().toLocaleTimeString() + " - " + it)
         }
         logdiv = d3.select("#logdiv")
         const firebaseConfig = {
@@ -156,20 +164,22 @@ a = false
     handleRaceSelection(Object.keys(eventData[ev0])[0])
     })};
     function saveToFirebase() {
-
+        logit("speichern auf Firebase...")
     database.ref('events').set(eventData);
     }
     function handleEventSelection(eventName) {
     populateDropdown('racepicker', Object.keys(eventData[eventName] || {}));
     drawEventOnMap(eventName);
     logit("event selected " + eventName + " - races : " +Object.keys(eventData[eventName]))
+    handleRaceSelection("mara") // TODO: es wird immer der mara ausgewählt wenn ein event geladen wird. das führt zum problem wenn ein rennen keinen mara hat
     }
+
     function handleRaceSelection(raceName) {
     selectedRace = raceName
     selectedEvent = document.getElementById('eventpicker').value;
     if (!selectedEvent || !raceName) return;
     logit("race selected: "+raceName )
-    const race = eventData[selectedEvent][raceName];
+    race = eventData[selectedEvent][raceName];
     if (race) {
     // Update the color picker to match the race color
     document.getElementById('colorPicker').value = race.style.color;
@@ -232,16 +242,29 @@ a = false
     race = event[raceName];
 
     // TODO: getbounds hat nicht funktinoiert 
-    map.setView(race.coords[Math.round(race.coords.length/3)],12)
+   
     if (race.coords && race.coords.length > 1) {
     let urace = raceName
-    const polyline = L.polyline(race.coords, { color: race.style.color })
-        .on('click', (event) => {if(addapoint == true){addapointfun(event.latlng)}else{handleRaceSelection(urace)}}) // Select race on click
+    polyline = L.polyline(race.coords, { color: race.style.color })
+    .on('click', (event) => {
+           
+    if (addapoint === true && selectedPointIndex !== null) {
+        const clickedLatLng = event.latlng;
+        const newCoord = [clickedLatLng.lat, clickedLatLng.lng];
+        race.coords.splice(selectedPointIndex + 1, 0, newCoord);
+        logit(`Neuer Punkt bei ${clickedLatLng.lat.toFixed(5)}, ${clickedLatLng.lng.toFixed(5)} eingefügt.`);
+        update_info(raceName);
+       drawEventOnMap(eventName);
+    } else {
+        handleRaceSelection(urace);
+    }
+}) // Select race on click
         .addTo(layers[raceName]);
 
 
 
         for (index =0;index<race.coords.length-1;index++){
+            let zulu =index
             dis = haversineDistance(race.coords[index][0],race.coords[index][1],race.coords[index+1][0],race.coords[index+1][1])
             dis = Math.round(dis*1000)/1000
             
@@ -251,29 +274,50 @@ a = false
             
             if(colorscheme){col=race.style.color
             }
-            let cir = L.circle(race.coords[index],{ color:  col,draggable: true}).addTo(layers[raceName])
-            let remindex = index
-            cir.bindTooltip(remindex +" - " + Math.round(dis*1000) + ' m')
-            
-            cir.on("click",function(){map.removeLayer(cir);race.coords.splice(remindex,1)})
-            cir.on('mousedown', (e) => {
-    const draggable = new L.Draggable(cir._path);
-    draggable.enable();
 
-    // Listen for dragging events
-    draggable.on('drag', (event) => {
-    const latLng = map.layerPointToLatLng(event.target._newPos);
-    cir.setLatLng(latLng); // Update circle's position
-    });
+            let marker = L.marker(race.coords[index], {
+    draggable: true,
+    icon: L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div class="marker-dot" style="background-color: ${col}"></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+    })
+}).addTo(layers[raceName]);
 
-    // On drag end, update coordinates array and disable dragging
-    draggable.on('dragend', (event) => {
-    const latLng = cir.getLatLng();
-    race.coords[index] = [latLng.lat, latLng.lng]; // Update array
-    draggable.disable();
-    console.log('Updated Coordinates:', coordinates);
-    });
-    });
+marker.bindTooltip(`${index} - ${Math.round(dis * 1000)} m`);
+
+// Auswahl bei Linksklick
+marker.on("click", function () {
+       
+       
+     selectedPointIndex = zulu ;
+    logit("Punkt ausgewählt: " + zulu );
+    updateMarkerStyles(); // Schwarze Umrandung setzen
+});
+
+// Rechtsklick = löschen
+marker.on("contextmenu", function () {
+
+    selectedPointIndex = zulu ;
+    map.removeLayer(marker);
+    race.coords.splice(zulu, 1);
+    update_info(raceName);
+    //polyline.setLatLngs(race.coords);
+    drawEventOnMap(selectedEvent)
+});
+
+// Drag = Position aktualisieren + Linie neu zeichnen
+marker.on("dragend", function (e) {
+    const newLatLng = e.target.getLatLng();
+    race.coords[zulu] = [newLatLng.lat, newLatLng.lng];
+    //polyline.setLatLngs(race.coords);
+    drawEventOnMap(selectedEvent)
+});
+
+
+           
+
         
         
         }
@@ -288,10 +332,16 @@ a = false
     //update_info()
 
     }
+
+    function updateMarkerStyles() {
+    document.querySelectorAll('.marker-dot').forEach((el, i) => {
+        el.style.border = (i === selectedPointIndex) ? '2px solid black' : 'none';
+    });
+}
     function update_info(selectedRace){
     selectedEvent = document.getElementById('eventpicker').value;
 
-        race=      eventData[selectedEvent][selectedRace]
+        race=eventData[selectedEvent][selectedRace]
 
         under=0
         right=0
@@ -410,14 +460,13 @@ a = false
         timestamp : new Date().toLocaleDateString(),
         length: calculatePolylineLength(points)
     }
-    
+    console.log(eventData)
 
     logit("coordiantes for " + selectedRace + " updated and saved") 
-   
     update_info(selectedRace)
     saveToFirebase();
     drawEventOnMap(selectedEvent);
-
+    map.setView(race.coords[Math.round(race.coords.length/3)],12)
     }
     function getSelectedColor() {
     return document.getElementById('colorPicker').value;

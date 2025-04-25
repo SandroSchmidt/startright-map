@@ -1,0 +1,6 @@
+Welche Fragen muss ich Marcel bei jedem Projekt stellen:
+1) wieviel Uhr geht es los? Muss das einstellbar sein?
+2) Gibt es Wasser- oder Verpflegungsstationen und wo?
+3) gibt es ein cutoff bei dem rennen bzw bis wieviel Uhr soll die Simulation laufen?
+
+
