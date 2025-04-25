@@ -166,6 +166,10 @@ input[type=range]::-moz-range-thumb:hover {
  <button onclick="autoplayspeed=0.4" style="width:7%">4</button>
  <button onclick="autoplayspeed=0.5" style="width:7%">5</button>
  
+ <button onclick="promptForTime()" >Change starttime</button>
+  <br>
+
+
         <button onclick="window.open('https://wa.me/4915222836269', '_blank');d3.select('#loaderdiv').style('display','none');d3.select('#centermenudiv').style('display','none')">Contact developer</button><br>
         <button onclick="d3.select('#loaderdiv').style('display','none');d3.select('#centermenudiv').style('display','none')">Close settings</button><br>
     
@@ -415,6 +419,25 @@ initialise_map()
     const totalMinutes = (hours * 60) + minutes
     
     return totalMinutes;
+}
+
+
+function promptForTime(defaultTime = "06:30") {
+    let timeInput = prompt("Enter time (HH:MM):", defaultTime);
+
+    // Basic validation
+    if (timeInput && /^\d{1,2}:\d{2}$/.test(timeInput)) {
+        let [hours, minutes] = timeInput.split(':').map(Number);
+        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+            return { hours, minutes };
+        } else {
+            alert("Invalid time. Please enter a valid time between 00:00 and 23:59.");
+            return null;
+        }
+    } else {
+        alert("Invalid format. Please enter time like HH:MM.");
+        return null;
+    }
 }
  function convertMinutesToTime(temp) {
     // Base time of 6:00 AM
