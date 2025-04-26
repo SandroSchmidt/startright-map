@@ -82,7 +82,7 @@
 }
 input[type=range] {
   -webkit-appearance: none; /* Remove default styling */
-  width: 60%;
+  width: 40%;
   height: 8px;
   background: #ddd;
   border-radius: 5px;
@@ -166,7 +166,7 @@ input[type=range]::-moz-range-thumb:hover {
  <button onclick="autoplayspeed=0.4" style="width:7%">4</button>
  <button onclick="autoplayspeed=0.5" style="width:7%">5</button>
  
- <button onclick="promptForTime()" >Change starttime</button>
+ <button onclick="delay.mara = promptForTime()" >Change starttime</button>
   <br>
 
 
@@ -180,25 +180,25 @@ input[type=range]::-moz-range-thumb:hover {
  
 
 
-    <table class="center" style="width:17% ;   font-family: 'MuseoSlab-500', sans-serif;">
+    <table class="center" style="width:20% ;   font-family: 'MuseoSlab-500', sans-serif;">
         <tr>
 
 
             <td style="width:20%">time: </td>
             <td style="width:30%"><span id="uhr">06:30</span></td>
         <td></td>
-            <td style="width:20%">guntime:</td>
-            <td style="width:30%"><span id="gunuhr">00:00</span></td>
+            <td style="width:30%">gun time:</td>
+            <td style="width:20%"><span id="gunuhr">00:00</span></td>
         </tr>
     </table>
 
  
-    <input type="range" id ="myRange" style="width: 60%" oninput="
+    <input type="range" id ="myRange" style="width: 50%" oninput="
     if(play == false)
   {  tim = Math.round(this.value) ; zeitgewahlt(Math.round(tim) )}"
 
              value=420 min=360 max=1095 step=1/>
-             <div id="logo" width="20%" onclick="d3.select('#loaderdiv').style('display','flex');d3.select('#centermenudiv').style('display','block')">startright map</div>
+             <div id="logo" width="20%" onclick="d3.select('#loaderdiv').style('display','flex');d3.select('#centermenudiv').style('display','block')">start right map</div>
 </div>
     
 
@@ -214,18 +214,7 @@ input[type=range]::-moz-range-thumb:hover {
             pitch: <input id="gu1" type="number" style="width:4%" value =45 step=1 min=15 max=90 oninput="map.setPitch(90-this.value)"/>
             bearing: <input id="gu2" type="number" style="width:4%" value=0 step=1 min=-90 max=90 oninput="map.setBearing(this.value)"/>
             zoom: <input id="gu3" type="number" style="width:4%" value =15 step=0.1 min=12 max=17 oninput="map.setZoom(this.value)"/>
-            <table>
            
-                <tr>
-                    <td>marathon start:</td>
-                    <td><input id="maratimset" type="time" value="12:01" onchange="delay.mara = convertTimeToMinutes(this.value); zeitgewahlt(Math.round(tim));   localStorage.setItem(key, JSON.stringify(delay));"/></td>
-                    <td>half-marathon start:</td>
-                    <td><input id="halftimset" type="time" value="12:01" onchange="delay.half = convertTimeToMinutes(this.value); zeitgewahlt(Math.round(tim));   localStorage.setItem(key, JSON.stringify(delay));"/></td>
-                </tr>
-             
-             
-            </table>
- 
 <br>  
 <br> 
 <br>   
@@ -307,13 +296,6 @@ waypoints =[
   //9, 15, 20, 25, 30, 36
 
 
-  {name:"Aidstation 1", coordinates:coordinates.mara[Math.round((1.6*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 2", coordinates:coordinates.mara[Math.round((3.25*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 3", coordinates:coordinates.mara[Math.round((5.05*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 4", coordinates:coordinates.mara[Math.round((5.75*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 5", coordinates:coordinates.mara[Math.round((7.3*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 6", coordinates:coordinates.mara[Math.round((8.8*conv)/25)],icon:'url(./icons/water.png)'},
-
 {    name:"Finish", coordinates:  coordinates.mara[coordinates.mara.length-1],icon:'url(./icons/finish.png)'},
 {    name:"Start", coordinates: coordinates.mara[0],icon:'url(./icons/start.png)'},
 {    name:"mara elite", coordinates:[0,0],icon:'url(./icons/42.png)'},
@@ -324,21 +306,6 @@ waypoints =[
 {    name:"half last", coordinates:[0,0],icon:'url(./icons/21B.png)'},
 
 
-
-{name:"Aidstation 7", coordinates:coordinates.mara[Math.round((10.1*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 8", coordinates:coordinates.mara[Math.round((11.5*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 9", coordinates:coordinates.mara[Math.round((12.6*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 10", coordinates:coordinates.mara[Math.round((13.6*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 11", coordinates:coordinates.mara[Math.round((14.6*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 12", coordinates:coordinates.mara[Math.round((15.7*conv)/25)],icon:'url(./icons/water.png)'}, 
-  {name:"Aidstation 13", coordinates:coordinates.mara[Math.round((16.9*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 14", coordinates:coordinates.mara[Math.round((18.2*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 15", coordinates:coordinates.mara[Math.round((19.2*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 16", coordinates:coordinates.mara[Math.round((20.2*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 17", coordinates:coordinates.mara[Math.round((22.3*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 18", coordinates:coordinates.mara[Math.round((23.04*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 19", coordinates:coordinates.mara[Math.round((24.5*conv)/25)],icon:'url(./icons/water.png)'},
-  {name:"Aidstation 19", coordinates:coordinates.mara[Math.round((25.2*conv)/25)],icon:'url(./icons/water.png)'},
 
 ]
 
@@ -380,19 +347,19 @@ key= "delay"
 const value = localStorage.getItem(key);
 
 // Check if the value exists
-delay={mara:(7*60-5),half:(7*60-5)}
+delay={mara:(9*60+35),half:(7*60-5)}
 if (value !== null) {
 
  delay = JSON.parse(value)
 
 } else {
-    delay={mara:(7*60-5),half:(7*60-5)}
+    delay={mara:(9*60+35)}
     localStorage.setItem(key, JSON.stringify(delay));
 
 
 }
-
-
+delay={mara:(9*60+35)}
+console.log("delay at startup "+delay.mara)
 d3.select('#maratimset').property("value",convertMinutesToTime(delay.mara))
 d3.select('#halftimset').property("value",convertMinutesToTime(delay.half))
 d3.select('#tenkmtimset').property("value",convertMinutesToTime(delay.tenkm))
@@ -422,14 +389,15 @@ initialise_map()
 }
 
 
-function promptForTime(defaultTime = "06:30") {
+function promptForTime(defaultTime = "09:35") {
     let timeInput = prompt("Enter time (HH:MM):", defaultTime);
 
     // Basic validation
     if (timeInput && /^\d{1,2}:\d{2}$/.test(timeInput)) {
         let [hours, minutes] = timeInput.split(':').map(Number);
         if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-            return { hours, minutes };
+            rex = parseInt(hours)*60 + minutes
+            return { rex };
         } else {
             alert("Invalid time. Please enter a valid time between 00:00 and 23:59.");
             return null;
@@ -475,22 +443,29 @@ function promptForTime(defaultTime = "06:30") {
                                          }
 
 
-                                    for (const key in coordinates) {
+for (const key in coordinates) {
                                         
                                         let kk = Math.max(0,timr-delay[key]) 
                                         kkk =kk
                                         if (kk<woist[key].length){
                                     for(i=0;i<coordinates[key].length-1;i++){
                                        
-                             
+                                        const currentValues = woist[key][kk].slice(4);
+    const minVal = d3.min(currentValues);
+    const maxVal = d3.max(currentValues);
+
+    // 2. Create a new color scale based on min and max
+    const dynamicColorScale = d3.scaleLinear()
+      .domain([minVal,maxVal/2, maxVal])
+      .range(["green","yellow", "red"]);  // Pick your color range
                                                 menge = woist[key][kk][i]
                           
                                         strokec=0
                             stroke = Math.min(10,mengeScale(menge))
                             rad = Math.min(10, mengeScale(menge))
                             if (menge < 1){stroke=0;rad = 0;strokec=0}
-                            col = colorScale[key](menge)
-                            
+                           // col = colorScale[key](menge)
+                            let col = dynamicColorScale(menge);
                             if(timr<delay[key] || timr>cutoff[key]+delay[key]){stroke=0;strokec=0,rad=0}
                            
       
@@ -817,7 +792,7 @@ markers =[]
 
 map.on('zoom', function() { d3.select('#gu3').property('value',Math.round(map.getZoom()*10)/10)
 toggleMarkers();
-if(map.getZoom()>13){}
+if(map.getZoom()>10){}
 /*
 if(map.getZoom() >14){linesize = 8}else{linesize=3}
 for(i=0;i<linienliste.length;i++){
@@ -842,7 +817,7 @@ textMarkersData =[]
 for (u=1;u<27;u++){
     temp = Math.round(u*conv*0.04)/0.04
     coord_mm.push(coordinates.mara[Math.round(temp/25)])
-    textMarkersData.push({coordinates:coordinates.mara[Math.round(temp/25)],text: u +" miles"})
+    textMarkersData.push({coordinates:coordinates.mara[Math.round(temp/25)],text: u +""})
 }
 
 /*
@@ -935,14 +910,14 @@ textMarkersData.forEach(data => {
 function toggleMarkers() {
         const zoom = map.getZoom();
         textMarkers.forEach(marker => {
-            if (zoom > 14) {
+            if (zoom > 10) {
                 marker.getElement().style.display = 'block';
             } else {
                 marker.getElement().style.display = 'none';
             }
         });
         markers.forEach(marker => {
-            if (zoom > 13) {
+            if (zoom > 10) {
                 marker.getElement().style.display = 'block';
             } else {
                 marker.getElement().style.display = 'none';

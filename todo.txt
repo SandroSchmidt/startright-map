@@ -4,3 +4,5 @@ Welche Fragen muss ich Marcel bei jedem Projekt stellen:
 3) gibt es ein cutoff bei dem rennen bzw bis wieviel Uhr soll die Simulation laufen?
 4) wann verteilst du den link? weil dass ist für mich auch die deadline für updates.
 
+milemarker immer sichtbar
+temporäres maximum für die farbe
