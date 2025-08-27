@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <head>
-<script src='./js/datav2.js'></script>
+<script src='./js/mel26.js'></script>
 <link href="https://db.onlinewebfonts.com/c/023dfbd5b3775aaf9066cc15f2b676c9?family=MuseoSlab-500" rel="stylesheet" type="text/css" />
 
 <script src='./js/d3.min.js'></script>
-
+<script src='./js/mel25.js'></script>
 <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
 <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <title>startright-map</title>
 
 </head>
@@ -136,6 +138,7 @@ input[type=range]::-moz-range-thumb:hover {
       loading ...</div>
       <div id="centermenudiv" onclick="d3.select('#loaderdiv').style('display','none');d3.select('#centermenudiv').style('display','none')" class="menu" style="display: none;">
         <h2>Settings:</h2>
+         
         <button onclick="realtime = !realtime;
         if(!realtime){d3.select('#realbutton').text('realtime')
          zeitgewahlt(Math.round(tim) )
@@ -281,19 +284,34 @@ if (coltoggle){
     }
 </style>
 <script>
+        const params = new URLSearchParams(window.location.search);
+ namedesevents_short = params.get('event');
+
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "startrightmap.firebaseapp.com",
+    databaseURL: "https://startrightmap-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "startrightmap",
+    storageBucket: "startrightmap.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+coordinates = {mara:0,half:0}
+loadEventsFromFirebase()
+
+
     setTimeout(() => {
         d3.select("#loaderdiv").style("display","none")
         d3.select('#spintext').remove()
-    }, 2000);
-    realtime = false
-    coltoggle=false
-    filast = {mara:{},half:{}}
-    autoplayspeed = 0.5
-
-    
-truecenter = coordinates.mara[Math.round(coordinates.mara.length/2)]
-//truecenter = [truecenter[1],truecenter[0]]
-  conv = 1609.34 
+     //   console.log(eventData)
+     
+        if(namedesevents_short=="mel25v1"){woist=mel25var1;coordinates.mara = latLngToLngLat(eventData.Mel25.mara.coords);coordinates.half = latLngToLngLat(eventData.Mel25.half.coords) ;console.log("e3")}
+        if(namedesevents_short=="mel25v2"){woist=mel25var2;coordinates.mara = latLngToLngLat(eventData.Mel25.mara.coords);coordinates.half = latLngToLngLat(eventData.Mel25.half.coords);console.log("e1") }
+        if(namedesevents_short=="mel26"){woist=mel26;coordinates.mara = latLngToLngLat(eventData.Mel26.mara.coords);coordinates.half = latLngToLngLat(eventData.Mel26.half.coords);console.log("e223") }
+        truecenter = coordinates.mara[Math.round(coordinates.mara.length/2)]
+setTimeout(function(){add_milemarker()},500)
 waypoints =[
   //9, 15, 20, 25, 30, 36
 {    name:"Finish", coordinates:  coordinates.mara[coordinates.mara.length-1],icon:'url(./icons/finish.png)'},
@@ -306,6 +324,26 @@ waypoints =[
 
 
 ]
+
+
+for (const key in coordinates) {
+    console.log(key)
+linejsons[key] = generateColoredGeoJSON(coordinates[key]) 
+pointjsons[key] = coordinatesToGeoJSON(coordinates[key])
+}
+initialise_map()
+
+    }, 5000);
+    realtime = false
+    coltoggle=false
+    filast = {mara:{},half:{}}
+    autoplayspeed = 0.5
+
+    
+
+//truecenter = [truecenter[1],truecenter[0]]
+  conv = 1609.34 
+
 
 
 
@@ -367,14 +405,12 @@ d3.select('#twofivekmtimset').property("value",convertMinutesToTime(delay.twofiv
 d3.select('#spedset').property("value",5)
 linejsons ={}
 pointjsons ={}
-for (const key in coordinates) {
-linejsons[key] = generateColoredGeoJSON(coordinates[key]) 
-pointjsons[key] = coordinatesToGeoJSON(coordinates[key])
-}
+
 
 play = false
- 
-initialise_map()
+ function latLngToLngLat(arr){
+  return (arr || []).map(([lat, lon]) => [lon, lat]);
+}
 
  function convertTimeToMinutes(time) {
     // Split the input time into hours and minutes
@@ -804,7 +840,7 @@ map.on('move', function() { d3.select('#gu2').property('value',Math.round(map.ge
 
 
 }
-setTimeout(function(){add_milemarker()},500)
+
 
 function add_milemarker()
 {
@@ -923,5 +959,17 @@ function toggleMarkers() {
             }
         });
     }
+
+
+
+       function loadEventsFromFirebase() {
+    database.ref('events').once('value').then(snapshot => {
+    eventData = snapshot.val() || {};
+    original = JSON.parse(JSON.stringify(eventData))
+
+   
+    ev0=Object.keys(eventData)[0]
+
+    })};
   </script>
   </html>
