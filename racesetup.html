@@ -629,7 +629,7 @@ document.getElementById('csvFileInput').addEventListener('change', function (eve
                     }
 
                     // das hier ist temporär wiel ich keine zeit mehr hatte es ordentlich zzu machen
-                    runners={mara:[],half:[]}
+                    runners={mara:[],half:[],tenkm:[],fivekm:[],twofive:[]}
                     for(i=0;i<laufer_ds["mara-brutto"].length;i++){
                         delay = laufer_ds["mara-brutto"][i]-laufer_ds["mara-netto"][i]
                         speed = 42195/laufer_ds["mara-netto"][i]
@@ -640,7 +640,23 @@ document.getElementById('csvFileInput').addEventListener('change', function (eve
                         speed = 21095/laufer_ds["half-netto"][i]
                         runners.half.push([delay,speed])
                     }
-
+for(i=0;i<laufer_ds["tenkm-brutto"].length;i++){
+                        delay = laufer_ds["tenkm-brutto"][i]-laufer_ds["tenkm-netto"][i]
+                        speed = 10000/laufer_ds["tenkm-netto"][i]
+                        runners.tenkm.push([delay,speed])
+                    }
+                    for(i=0;i<laufer_ds["fivekm-brutto"].length;i++){
+                        delay = laufer_ds["fivekm-brutto"][i]-laufer_ds["fivekm-netto"][i]
+                        speed = 5000/laufer_ds["fivekm-netto"][i]
+                        runners.fivekm.push([delay,speed])
+                    }
+         
+                  for(i=0;i<laufer_ds["twofive-brutt"].length;i++){
+                        delay = laufer_ds["twofive-brutt"][i]-laufer_ds["twofive-netto"][i]
+                        speed = 2500/laufer_ds["twofive-netto"][i]
+                        runners.twofive.push([delay,speed])
+                    }
+                        
                     console.log(laufer_ds)
                     console.log(runners)
                    
